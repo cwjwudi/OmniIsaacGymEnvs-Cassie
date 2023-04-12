@@ -1,0 +1,154 @@
+task:
+  name: UR10
+  physics_engine: ${..physics_engine}
+  env:
+    numEnvs: ${resolve_default:512,${...num_envs}}
+    envSpacing: 4.0
+    resetDist: 3.0
+    maxEffort: 400.0
+    clipObservations: 5.0
+    clipActions: 1.0
+    controlFrequencyInv: 2
+  sim:
+    dt: 0.0083
+    use_gpu_pipeline: ${eq:${...pipeline},"gpu"}
+    gravity:
+    - 0.0
+    - 0.0
+    - -9.81
+    add_ground_plane: true
+    add_distant_light: true
+    use_flatcache: true
+    enable_scene_query_support: false
+    disable_contact_processing: false
+    enable_cameras: false
+    default_physics_material:
+      static_friction: 1.0
+      dynamic_friction: 1.0
+      restitution: 0.0
+    physx:
+      worker_thread_count: ${....num_threads}
+      solver_type: ${....solver_type}
+      use_gpu: ${eq:${....sim_device},"gpu"}
+      solver_position_iteration_count: 4
+      solver_velocity_iteration_count: 0
+      contact_offset: 0.02
+      rest_offset: 0.001
+      bounce_threshold_velocity: 0.2
+      friction_offset_threshold: 0.04
+      friction_correlation_distance: 0.025
+      enable_sleeping: true
+      enable_stabilization: true
+      max_depenetration_velocity: 100.0
+      gpu_max_rigid_contact_count: 524288
+      gpu_max_rigid_patch_count: 81920
+      gpu_found_lost_pairs_capacity: 1024
+      gpu_found_lost_aggregate_pairs_capacity: 262144
+      gpu_total_aggregate_pairs_capacity: 1024
+      gpu_max_soft_body_contacts: 1048576
+      gpu_max_particle_contacts: 1048576
+      gpu_heap_capacity: 67108864
+      gpu_temp_buffer_capacity: 16777216
+      gpu_max_num_partitions: 8
+    Cartpole:
+      override_usd_defaults: false
+      enable_self_collisions: false
+      enable_gyroscopic_forces: true
+      solver_position_iteration_count: 4
+      solver_velocity_iteration_count: 0
+      sleep_threshold: 0.005
+      stabilization_threshold: 0.001
+      density: -1
+      max_depenetration_velocity: 100.0
+      contact_offset: 0.02
+      rest_offset: 0.001
+train:
+  params:
+    seed: ${...seed}
+    algo:
+      name: a2c_continuous
+    model:
+      name: continuous_a2c_logstd
+    network:
+      name: actor_critic
+      separate: false
+      space:
+        continuous:
+          mu_activation: None
+          sigma_activation: None
+          mu_init:
+            name: default
+          sigma_init:
+            name: const_initializer
+            val: 0
+          fixed_sigma: true
+      mlp:
+        units:
+        - 32
+        - 32
+        activation: elu
+        initializer:
+          name: default
+        regularizer:
+          name: None
+    load_checkpoint: ${if:${...checkpoint},True,False}
+    load_path: ${...checkpoint}
+    config:
+      name: ${resolve_default:Cartpole,${....experiment}}
+      full_experiment_name: ${.name}
+      device: ${....rl_device}
+      device_name: ${....rl_device}
+      env_name: rlgpu
+      multi_gpu: ${....multi_gpu}
+      ppo: true
+      mixed_precision: false
+      normalize_input: true
+      normalize_value: true
+      num_actors: ${....task.env.numEnvs}
+      reward_shaper:
+        scale_value: 0.1
+      normalize_advantage: true
+      gamma: 0.99
+      tau: 0.95
+      learning_rate: 0.0003
+      lr_schedule: adaptive
+      kl_threshold: 0.008
+      score_to_win: 20000
+      max_epochs: ${resolve_default:100,${....max_iterations}}
+      save_best_after: 50
+      save_frequency: 25
+      grad_norm: 1.0
+      entropy_coef: 0.0
+      truncate_grads: true
+      e_clip: 0.2
+      horizon_length: 16
+      minibatch_size: 8192
+      mini_epochs: 8
+      critic_coef: 4
+      clip_value: true
+      seq_len: 4
+      bounds_loss_coef: 0.0001
+task_name: ${task.name}
+experiment: ''
+num_envs: ''
+seed: 42
+torch_deterministic: false
+max_iterations: ''
+physics_engine: physx
+pipeline: gpu
+sim_device: gpu
+device_id: 0
+rl_device: cuda:0
+multi_gpu: false
+num_threads: 4
+solver_type: 1
+test: false
+checkpoint: ''
+headless: false
+enable_livestream: false
+mt_timeout: 30
+wandb_activate: false
+wandb_group: ''
+wandb_name: ${train.params.config.name}
+wandb_entity: ''
+wandb_project: omniisaacgymenvs

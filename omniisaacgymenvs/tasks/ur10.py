@@ -26,7 +26,7 @@ class UR10Task(RLTask):
         self._num_observations = 4
         self._num_actions = 11
         self._env_spacing = self._task_cfg["env"]["envSpacing"]
-        self._num_envs = 1
+        self._num_envs = self._task_cfg["env"]["numEnvs"]
         self._cartpole_positions = torch.tensor([0.0, 0.0, 2.0])
 
 
@@ -58,6 +58,7 @@ class UR10Task(RLTask):
         # self.perform_reset()
         # self.apply_action(actions)
         self._ur10s.set_joint_position_targets(torch.tensor([1.0, 0.0, 1.0, 2.0, 0.0, 0.0]), torch.tensor([0]))
+        pass
 
 
     def get_observations(self) -> dict:
