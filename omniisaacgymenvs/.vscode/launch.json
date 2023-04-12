@@ -13,6 +13,7 @@
             "justMyCode": true,
             "args": [
                 "task=UR10",
+                "headless=True",
             ]
         },
 

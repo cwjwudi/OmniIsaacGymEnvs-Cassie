@@ -27,6 +27,8 @@ class UR10Task(RLTask):
         self._num_actions = 11
         self._env_spacing = self._task_cfg["env"]["envSpacing"]
         self._num_envs = self._task_cfg["env"]["numEnvs"]
+        self._num_envs = 5
+
         self._cartpole_positions = torch.tensor([0.0, 0.0, 2.0])
 
 
@@ -63,9 +65,21 @@ class UR10Task(RLTask):
 
     def get_observations(self) -> dict:
         # implement logic to retrieve observation states
-        # self.obs_buf = self.compute_observations()
-        return torch.tensor([1.0, 0.0, 0.0])
-
+        dof_pos = self._ur10s.get_joint_positions(clone=False)
+        dof_vel = self._ur10s.get_joint_velocities(clone=False)
+        self.obs_buf = torch.cat(
+            (
+                dof_pos,
+                dof_vel,
+            ),
+            dim=-1,
+        )
+        observations = {
+            self._ur10s.name: {
+                "obs_buf": self.obs_buf
+            }
+        }
+        return observations
 
     def calculate_metrics(self) -> None:
         # implement logic to compute rewards
