@@ -47,7 +47,8 @@ def initialize_task(config, env, init_sim=True):
     
     from omniisaacgymenvs.tasks.m03 import M03Task
     from omniisaacgymenvs.tasks.ur10 import UR10Task
-
+    from omniisaacgymenvs.tasks.go1 import Go1Task
+    from omniisaacgymenvs.tasks.go2 import Go2Task
 
     # Mappings from strings to environments
     task_map = {
@@ -68,6 +69,8 @@ def initialize_task(config, env, init_sim=True):
         "ShadowHandOpenAI_LSTM": ShadowHandTask,
         "M03": M03Task,
         "UR10": UR10Task,
+        "Go2": Go2Task,
+        "Go1": Go1Task,
     }
 
     cfg = sim_config.config
