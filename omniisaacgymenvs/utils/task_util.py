@@ -49,6 +49,7 @@ def initialize_task(config, env, init_sim=True):
     from omniisaacgymenvs.tasks.ur10 import UR10Task
     from omniisaacgymenvs.tasks.go1 import Go1Task
     from omniisaacgymenvs.tasks.go2 import Go2Task
+    from omniisaacgymenvs.tasks.cassie import CassieTask
 
     # Mappings from strings to environments
     task_map = {
@@ -71,6 +72,7 @@ def initialize_task(config, env, init_sim=True):
         "UR10": UR10Task,
         "Go2": Go2Task,
         "Go1": Go1Task,
+        "Cassie": CassieTask,
     }
 
     cfg = sim_config.config

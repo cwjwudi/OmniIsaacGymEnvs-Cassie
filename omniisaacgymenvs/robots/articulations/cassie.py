@@ -32,17 +32,16 @@ from typing import Optional
 import numpy as np
 import torch
 from omni.isaac.core.robots.robot import Robot
-from omni.isaac.core.utils.nucleus import get_assets_root_path
 from omni.isaac.core.utils.stage import add_reference_to_stage
 
 import carb
 
 
-class Go1(Robot):
+class Cassie(Robot):
     def __init__(
         self,
         prim_path: str,
-        name: Optional[str] = "Go1",
+        name: Optional[str] = "Cassie",
         usd_path: Optional[str] = None,
         translation: Optional[torch.tensor] = None,
         orientation: Optional[torch.tensor] = None,
@@ -51,12 +50,7 @@ class Go1(Robot):
         self._usd_path = usd_path
         self._name = name
 
-        if self._usd_path is None:
-            assets_root_path = get_assets_root_path()
-            if assets_root_path is None:
-                carb.log_error("Could not find Isaac Sim assets folder")
-            # self._usd_path = "omniverse://127.0.0.1/NVIDIA/Assets/Isaac/2022.2.1/Isaac/Robots/Unitree/go1.usd"
-        self._usd_path = "/home/mhming/omni_gym/USD/go1/go1_test.usd"
+        self._usd_path = "/home/mhming/omni_gym/USD/cassie/cassie.usd"
         add_reference_to_stage(self._usd_path, prim_path)
 
         super().__init__(
@@ -67,14 +61,24 @@ class Go1(Robot):
             articulation_controller=None,
         )
 
-        # self._dof_names = []
-        # for quadrant in ["FL", "FR", "RL", "RR"]:
-        #     for component in ["hip", "thigh", "calf"]:
-        #         self._dof_names.append(f"{quadrant}_{component}_joint")
+        self._dof_names = ['hip_abduction_left',
+                           'hip_abduction_right',
 
-        self._dof_names = ['FL_hip_joint', 'FR_hip_joint', 'RL_hip_joint', 'RR_hip_joint',
-                           'FL_thigh_joint', 'FR_thigh_joint', 'RL_thigh_joint', 'RR_thigh_joint',
-                           'FL_calf_joint', 'FR_calf_joint', 'RL_calf_joint', 'RR_calf_joint']
+                           'hip_rotation_left',
+                           'hip_rotation_right',
+
+                           'hip_flexion_left',
+                           'hip_flexion_right',
+
+                           'thigh_joint_left',
+                           'thigh_joint_right',
+
+                           'ankle_joint_left',
+                           'ankle_joint_right',
+
+                           'toe_joint_left',
+                           'toe_joint_right',
+                           ]
 
     @property
     def dof_names(self):

@@ -1,5 +1,5 @@
 from omniisaacgymenvs.tasks.base.rl_task import RLTask
-from omniisaacgymenvs.robots.articulations.go1 import Go1
+from omniisaacgymenvs.robots.articulations.cassie import Cassie
 from omniisaacgymenvs.tasks.utils.usd_utils import set_drive
 
 from omni.isaac.core.articulations import ArticulationView
@@ -13,7 +13,7 @@ import torch
 import math
 
 
-class Go1Task(RLTask):
+class CassieTask(RLTask):
     def __init__(
             self,
             name: str,  # name of the Task
@@ -85,16 +85,16 @@ class Go1Task(RLTask):
         self.get_robots()  # add a robot actor to the stage
         super().set_up_scene(
             scene)  # pass scene to parent class - this method in RLTask also uses GridCloner to clone the robot and adds a ground plane if desired
-        self._robots = ArticulationView(prim_paths_expr="/World/envs/.*/go1", name="go1_view")
+        self._robots = ArticulationView(prim_paths_expr="/World/envs/.*/cassie", name="cassie_view")
         scene.add(self._robots)
 
     def get_robots(self):
         # applies articulation settings from the task configuration yaml file
-        robot = Go1(prim_path=self.default_zero_env_path + "/go1", name="Go1", translation=self._robot_translation)
+        robot = Cassie(prim_path=self.default_zero_env_path + "/cassie", name="Cassie", translation=self._robot_translation)
         self._sim_config.apply_articulation_settings(
-            "Go1",
+            "Cassie",
             get_prim_at_path(robot.prim_path),
-            self._sim_config.parse_actor_config("Go1"),
+            self._sim_config.parse_actor_config("Cassie"),
         )
         # Configure joint properties
         joint_paths = []
@@ -102,6 +102,21 @@ class Go1Task(RLTask):
             joint_paths.append(f"trunk/{quadrant}_hip_joint")
             for component, abbrev in [("hip", "thigh"), ("thigh", "calf")]:
                 joint_paths.append(f"{quadrant}_{component}/{quadrant}_{abbrev}_joint")
+
+        joint_paths = ["pelvis/hip_abduction_left",
+                       "left_pelvis_rotation/hip_rotation_left",
+                       "left_hip/hip_flexion_left",
+                       "left_thigh/thigh_joint_left",
+                       "left_shin/ankle_joint_left",
+                       "left_tarsus/toe_joint_left",
+
+                       "pelvis/hip_abduction_right",
+                       "right_pelvis_rotation/hip_rotation_right",
+                       "right_hip/hip_flexion_right",
+                       "right_thigh/thigh_joint_right",
+                       "right_shin/ankle_joint_right",
+                       "right_tarsus/toe_joint_right",
+                       ]
         for joint_path in joint_paths:
             set_drive(f"{robot.prim_path}/{joint_path}", drive_type="angular", target_type="position",
                       target_value=0, stiffness=400, damping=40, max_force=1000)
@@ -202,7 +217,7 @@ class Go1Task(RLTask):
         return observations
 
     def calculate_metrics(self) -> None:
-        self.fallen_over = self.is_base_below_threshold(threshold=0.2, ground_heights=0.0)
+        self.fallen_over = self.is_base_below_threshold(threshold=0.4, ground_heights=0.0)
 
         return
 

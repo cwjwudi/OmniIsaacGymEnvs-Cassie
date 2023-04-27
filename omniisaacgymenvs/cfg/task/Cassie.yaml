@@ -1,10 +1,10 @@
 # used to create the object
-name: Go1
+name: Cassie
 
 physics_engine: ${..physics_engine}
 
 env:
-  numEnvs: ${resolve_default:512,${...num_envs}}
+  numEnvs: ${resolve_default:4096,${...num_envs}}
   envSpacing: 4.  # [m]
 
   clipObservations: 5.0
@@ -13,7 +13,7 @@ env:
   controlFrequencyInv: 2
 
   baseInitState:
-    pos: [0.0, 0.0, 0.45] # x,y,z [m]
+    pos: [0.0, 0.0, 0.8] # x,y,z [m]
     rot: [0.0, 0.0, 0.0, 1.0] # x,y,z,w [quat]
     vLinear: [0.0, 0.0, 0.0]  # x,y,z [m/s]
     vAngular: [0.0, 0.0, 0.0]  # x,y,z [rad/s]
@@ -30,20 +30,23 @@ env:
     actionScale: 10
 
   defaultJointAngles:  # = target angles when action = 0.0
-    FL_hip_joint: 0.0    # [rad]
-    FR_hip_joint: 0.0    # [rad]
-    RL_hip_joint: 0.0   # [rad]
-    RR_hip_joint: 0.0   # [rad]
+    hip_abduction_left: 0.1    # [rad]
+    hip_abduction_right: -0.1    # [rad]
 
-    FL_thigh_joint: 0.52     # [rad]
-    FR_thigh_joint: 0.52    # [rad]
-    RL_thigh_joint: 0.52    # [rad]
-    RR_thigh_joint: 0.52   # [rad]
+    hip_rotation_left: 0.0    # [rad]
+    hip_rotation_right: 0.0    # [rad]
 
-    FL_calf_joint: -1.04    # [rad]
-    FR_calf_joint: -1.04   # [rad]
-    RL_calf_joint: -1.04   # [rad]
-    RR_calf_joint: -1.04   # [rad]
+    hip_flexion_left: 1.0   # [rad]
+    hip_flexion_right: 1.0   # [rad]
+
+    thigh_joint_left: -1.8   # [rad]
+    thigh_joint_right: -1.8   # [rad]
+
+    ankle_joint_left: 1.57     # [rad]
+    ankle_joint_right: 1.57     # [rad]
+
+    toe_joint_left: -1.57    # [rad]
+    toe_joint_right: -1.57    # [rad]
 
   learn:
     # rewards
