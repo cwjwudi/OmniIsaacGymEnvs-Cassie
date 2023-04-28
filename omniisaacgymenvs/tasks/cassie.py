@@ -27,57 +27,10 @@ class CassieTask(RLTask):
         self._cfg = sim_config.config
         self._task_cfg = sim_config.task_config
 
-        # normalization
-        self.lin_vel_scale = self._task_cfg["env"]["learn"]["linearVelocityScale"]
-        self.ang_vel_scale = self._task_cfg["env"]["learn"]["angularVelocityScale"]
-        self.dof_pos_scale = self._task_cfg["env"]["learn"]["dofPositionScale"]
-        self.dof_vel_scale = self._task_cfg["env"]["learn"]["dofVelocityScale"]
-        self.action_scale = self._task_cfg["env"]["control"]["actionScale"]
-
-        # reward scales
-        self.rew_scales = {}
-        self.rew_scales["lin_vel_xy"] = self._task_cfg["env"]["learn"]["linearVelocityXYRewardScale"]
-        self.rew_scales["ang_vel_z"] = self._task_cfg["env"]["learn"]["angularVelocityZRewardScale"]
-        self.rew_scales["lin_vel_z"] = self._task_cfg["env"]["learn"]["linearVelocityZRewardScale"]
-        self.rew_scales["joint_acc"] = self._task_cfg["env"]["learn"]["jointAccRewardScale"]
-        self.rew_scales["action_rate"] = self._task_cfg["env"]["learn"]["actionRateRewardScale"]
-        self.rew_scales["cosmetic"] = self._task_cfg["env"]["learn"]["cosmeticRewardScale"]
-
-        # command ranges
-        self.command_x_range = self._task_cfg["env"]["randomCommandVelocityRanges"]["linear_x"]
-        self.command_y_range = self._task_cfg["env"]["randomCommandVelocityRanges"]["linear_y"]
-        self.command_yaw_range = self._task_cfg["env"]["randomCommandVelocityRanges"]["yaw"]
-
-        # base init state
-        pos = self._task_cfg["env"]["baseInitState"]["pos"]
-        rot = self._task_cfg["env"]["baseInitState"]["rot"]
-        v_lin = self._task_cfg["env"]["baseInitState"]["vLinear"]
-        v_ang = self._task_cfg["env"]["baseInitState"]["vAngular"]
-        state = pos + rot + v_lin + v_ang
-
-        self.base_init_state = state
-
-        # default joint positions
-        self.named_default_joint_angles = self._task_cfg["env"]["defaultJointAngles"]
-
-        # other
-        self.dt = 1 / 60
-        self.max_episode_length_s = self._task_cfg["env"]["learn"]["episodeLength_s"]
-        self.max_episode_length = int(self.max_episode_length_s / self.dt + 0.5)
-        self.Kp = self._task_cfg["env"]["control"]["stiffness"]
-        self.Kd = self._task_cfg["env"]["control"]["damping"]
-
-        for key in self.rew_scales.keys():
-            self.rew_scales[key] *= self.dt
-
-        self._num_observations = 24
-        self._num_actions = 12
-        self._env_spacing = self._task_cfg["env"]["envSpacing"]
-        self._num_envs = self._task_cfg["env"]["numEnvs"]
-        self._robot_translation = torch.tensor(self._task_cfg["env"]["baseInitState"]["pos"])
-
+        self.init_cfg()
         # call parent class’s __init__
         RLTask.__init__(self, name, env)
+        self.init_buffers()
         return
 
     def set_up_scene(self, scene) -> None:
@@ -97,12 +50,6 @@ class CassieTask(RLTask):
             self._sim_config.parse_actor_config("Cassie"),
         )
         # Configure joint properties
-        joint_paths = []
-        for quadrant in ["FL", "FR", "RL", "RR"]:
-            joint_paths.append(f"trunk/{quadrant}_hip_joint")
-            for component, abbrev in [("hip", "thigh"), ("thigh", "calf")]:
-                joint_paths.append(f"{quadrant}_{component}/{quadrant}_{abbrev}_joint")
-
         joint_paths = ["pelvis/hip_abduction_left",
                        "left_pelvis_rotation/hip_rotation_left",
                        "left_hip/hip_flexion_left",
@@ -117,11 +64,14 @@ class CassieTask(RLTask):
                        "right_shin/ankle_joint_right",
                        "right_tarsus/toe_joint_right",
                        ]
+
+        index = 0
         for joint_path in joint_paths:
             set_drive(f"{robot.prim_path}/{joint_path}", drive_type="angular", target_type="position",
-                      target_value=0, stiffness=400, damping=40, max_force=1000)
+                      target_value=0, stiffness=self.Kp[index], damping=self.Kd[index], max_force=self.max_force)
+            index += 1
 
-        self.default_dof_pos = torch.zeros((self.num_envs, 12), dtype=torch.float, device=self._device, requires_grad=False)
+        self.default_dof_pos = torch.zeros((self.num_envs, self.num_actions), dtype=torch.float, device=self._device, requires_grad=False)
         dof_names = robot.dof_names
         for i in range(self.num_actions):
             name = dof_names[i]
@@ -170,6 +120,8 @@ class CassieTask(RLTask):
         self.progress_buf[:] += 1
 
         if self._env._world.is_playing():
+            # update buffer data
+            # self.update_buffers()
             # 获取观测
             self.get_observations()
             self.get_states()
@@ -217,7 +169,7 @@ class CassieTask(RLTask):
         return observations
 
     def calculate_metrics(self) -> None:
-        self.fallen_over = self.is_base_below_threshold(threshold=0.4, ground_heights=0.0)
+        self.fallen_over = self.is_base_below_threshold(threshold=self._reset_threshold, ground_heights=0.0)
 
         return
 
@@ -269,4 +221,79 @@ class CassieTask(RLTask):
         base_heights -= ground_heights
         return (base_heights[:] < threshold)
 
+    def init_cfg(self):
+        # normalization
+        self.lin_vel_scale = self._task_cfg["env"]["learn"]["linearVelocityScale"]
+        self.ang_vel_scale = self._task_cfg["env"]["learn"]["angularVelocityScale"]
+        self.dof_pos_scale = self._task_cfg["env"]["learn"]["dofPositionScale"]
+        self.dof_vel_scale = self._task_cfg["env"]["learn"]["dofVelocityScale"]
+        self.action_scale = self._task_cfg["env"]["control"]["actionScale"]
+
+        # reward scales
+        self.rew_scales = {}
+        self.rew_scales["lin_vel_xy"] = self._task_cfg["env"]["learn"]["linearVelocityXYRewardScale"]
+        self.rew_scales["ang_vel_z"] = self._task_cfg["env"]["learn"]["angularVelocityZRewardScale"]
+        self.rew_scales["lin_vel_z"] = self._task_cfg["env"]["learn"]["linearVelocityZRewardScale"]
+        self.rew_scales["joint_acc"] = self._task_cfg["env"]["learn"]["jointAccRewardScale"]
+        self.rew_scales["action_rate"] = self._task_cfg["env"]["learn"]["actionRateRewardScale"]
+        self.rew_scales["cosmetic"] = self._task_cfg["env"]["learn"]["cosmeticRewardScale"]
+
+        # command ranges
+        self.command_x_range = self._task_cfg["env"]["randomCommandVelocityRanges"]["linear_x"]
+        self.command_y_range = self._task_cfg["env"]["randomCommandVelocityRanges"]["linear_y"]
+        self.command_yaw_range = self._task_cfg["env"]["randomCommandVelocityRanges"]["yaw"]
+
+        # base init state
+        pos = self._task_cfg["env"]["baseInitState"]["pos"]
+        rot = self._task_cfg["env"]["baseInitState"]["rot"]
+        v_lin = self._task_cfg["env"]["baseInitState"]["vLinear"]
+        v_ang = self._task_cfg["env"]["baseInitState"]["vAngular"]
+        state = pos + rot + v_lin + v_ang
+
+        self.base_init_state = state
+
+        # default joint positions
+        self.named_default_joint_angles = self._task_cfg["env"]["defaultJointAngles"]
+
+        # other
+        self.dt = 1 / 60
+        self.max_episode_length_s = self._task_cfg["env"]["learn"]["episodeLength_s"]
+        self.max_episode_length = int(self.max_episode_length_s / self.dt + 0.5)
+        self.Kp = self._task_cfg["env"]["control"]["stiffness"]
+        self.Kd = self._task_cfg["env"]["control"]["damping"]
+        self.max_force = self._task_cfg["env"]["control"]["maxForce"]
+
+        for key in self.rew_scales.keys():
+            self.rew_scales[key] *= self.dt
+
+        self._num_observations = self._task_cfg["env"]["numObservations"]
+        self._num_actions = self._task_cfg["env"]["numActions"]
+        self._env_spacing = self._task_cfg["env"]["envSpacing"]
+        self._num_envs = self._task_cfg["env"]["numEnvs"]
+        self._robot_translation = torch.tensor(self._task_cfg["env"]["baseInitState"]["pos"])
+        self._reset_threshold = self._task_cfg["env"]["resetThreshold"]
+
+    def init_buffers(self):
+        # init later used data
+        self.dof_pos = torch.zeros(self.num_envs, self.num_actions,
+                                   dtype=torch.float, device=self._device, requires_grad=False)
+        self.dof_vel = torch.zeros_like(self.dof_pos)
+        self.torques = torch.zeros_like(self.dof_pos)
+        self.actions = torch.zeros_like(self.dof_pos)
+        self.last_actions = torch.zeros_like(self.dof_pos)
+        # self.torques = torch.zeros(self.num_envs, self.num_actions,
+        #                            dtype=torch.float, device=self._device, requires_grad=False)
+        # self.actions = torch.zeros(self.num_envs, self.num_actions,
+        #                            dtype=torch.float, device=self._device, requires_grad=False)
+        # self.last_actions = torch.zeros(self.num_envs, self.num_actions,
+        #                            dtype=torch.float, device=self._device, requires_grad=False)
+
+
+
+    def update_buffers(self):
+        pass
+
+# ---------------------reward functions--------------------------------------------------
+    def _reward_lin_vel_z(self):
+        self.lin_vel_scale
 
