@@ -4,8 +4,8 @@ name: Cassie
 physics_engine: ${..physics_engine}
 
 env:
-  numEnvs: ${resolve_default:1,${...num_envs}}
-  numObservations: 24
+  numEnvs: ${resolve_default:4096,${...num_envs}}
+  numObservations: 48
   numActions: 12
   envSpacing: 4.  # [m]
 
@@ -57,12 +57,12 @@ env:
 
   learn:
     # rewards
-    linearVelocityXYRewardScale: 1.0
+    linearVelocityXYRewardScale: 2.0
     angularVelocityZRewardScale: 0.5
-    linearVelocityZRewardScale: -0.03
-    jointAccRewardScale: -0.0003
-    actionRateRewardScale: -0.006
-    cosmeticRewardScale: -0.06
+    linearVelocityZRewardScale: -0.01
+    jointAccRewardScale: -0.00003
+    actionRateRewardScale: -0.00006
+    torqueRewardScale: -0.000001
 
     # normalization
     linearVelocityScale: 2.0
