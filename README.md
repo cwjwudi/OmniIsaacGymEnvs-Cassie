@@ -1,3 +1,9 @@
+# Add bipped robot Cassie in OmniIsaacGymEnvs
+This work is based on [OmniIsaacGymEnvs](https://github.com/NVIDIA-Omniverse/OmniIsaacGymEnvs) and [legged_gym](https://github.com/leggedrobotics/legged_gym).
+If you want to try cassie train, please specify `task` parameters as `Cassie`.
+
+I imported the URDF file of Cassie located in [legged_gym](https://github.com/leggedrobotics/legged_gym) into USD according to tutorial [How to Import Your Robot Into Isaac Sim in NVIDIA Omniverse](https://www.youtube.com/watch?v=pxPFr58gHmQ).
+
 # Omniverse Isaac Gym Reinforcement Learning Environments for Isaac Sim
 
 ## About this repository
